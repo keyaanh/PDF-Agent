@@ -19,17 +19,15 @@ import importlib.util
 from html import css, bot_template, user_template
 
 
-# Function to check dependencies
 def check_dependency(module_name):
     """Check if a Python module is installed."""
     return importlib.util.find_spec(module_name) is not None
 
-# Function to extract text using Tesseract OCR
 def get_pdf_text_ocr(pdf_docs):
     text_data = []
     try:
         for pdf in pdf_docs:
-            # Convert PDF pages to images
+            # Convert pdf -> images
             try:
                 images = pdf2image.convert_from_bytes(pdf.read())
             except pdf2image.exceptions.PDFInfoNotInstalledError:
@@ -41,7 +39,7 @@ def get_pdf_text_ocr(pdf_docs):
             
             pdf_text = ""
             for page_num, image in enumerate(images):
-                # Perform OCR on the image
+                # Do OCR
                 try:
                     text = pytesseract.image_to_string(image, config='--psm 6')
                     pdf_text += f"\n[Page {page_num + 1}]\n{text}"
@@ -54,9 +52,9 @@ def get_pdf_text_ocr(pdf_docs):
         st.error(f"Error processing PDFs: {str(e)}")
         return []
 
-# Function to clean and preprocess text
+
 def clean_text(text):
-    # Remove duplicate lines (e.g., repeated addresses)
+    
     lines = text.split("\n")
     unique_lines = []
     seen = set()
@@ -66,18 +64,16 @@ def clean_text(text):
             unique_lines.append(cleaned_line)
             seen.add(cleaned_line)
     
-    # Correct common OCR errors (e.g., "PROOUCTS" -> "PRODUCTS")
     text = "\n".join(unique_lines)
     text = re.sub(r"PROOUCTS", "PRODUCTS", text, flags=re.IGNORECASE)
     text = re.sub(r"TUCSSON", "TUCSON", text, flags=re.IGNORECASE)
     text = re.sub(r"\(52E\)", "(520)", text)  # Fix phone number typo
     return text
 
-# Function to extract structured data (e.g., key fields)
+
 def extract_structured_data(text):
     structured_data = {}
     
-    # Define regex patterns with explicit capture groups
     patterns = {
         "delivery_ticket": r"DELIVERY TICKET\s*([A-Z0-9-]+)",
         "account": r"Account:\s*(\d+)",
@@ -89,7 +85,6 @@ def extract_structured_data(text):
         "order_date": r"Order Date:\s*(\d{2}/\d{2}/\d{2,4})"  # Allow 2 or 4 digit years
     }
     
-    # Extract key fields with error handling
     for key, pattern in patterns.items():
         try:
             match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
@@ -107,7 +102,7 @@ def extract_structured_data(text):
     
     # Extract table data
     table_data = []
-    table_pattern = r"(\d+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(.+)"  # Assumes table format
+    table_pattern = r"(\d+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(.+)" 
     try:
         for match in re.finditer(table_pattern, text, re.MULTILINE):
             table_data.append({
@@ -123,19 +118,18 @@ def extract_structured_data(text):
     structured_data["table"] = table_data
     return structured_data
 
-# Modified text extraction function
 def get_pdf_text(pdf_docs):
     raw_texts = get_pdf_text_ocr(pdf_docs)
     processed_texts = []
     for doc in raw_texts:
         cleaned_text = clean_text(doc["text"])
         structured_data = extract_structured_data(cleaned_text)
-        # Combine cleaned text with structured data for context
+        
         text = f"PDF: {doc['pdf_name']}\n{cleaned_text}\nStructured Data: {structured_data}"
         processed_texts.append(text)
     return processed_texts
 
-# Modified chunking to include metadata
+# chunking include metadata
 def get_text_chunks(texts):
     text_splitter = CharacterTextSplitter(
         separator="\n",
@@ -153,7 +147,7 @@ def get_text_chunks(texts):
             })
     return chunks
 
-# Modified vector store to include metadata
+#  vector store 
 def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings()
     texts = [chunk["text"] for chunk in text_chunks]
@@ -161,12 +155,11 @@ def get_vectorstore(text_chunks):
     vectorstore = FAISS.from_texts(texts=texts, embedding=embeddings, metadatas=metadatas)
     return vectorstore
 
-# Modified conversation chain with custom prompt
+# custom prompt
 def get_conversation_chain(vectorstore):
     llm = ChatOpenAI(temperature=0.7)
     memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
     
-    # Define the prompt as a PromptTemplate
     custom_prompt = PromptTemplate(
         input_variables=["context", "question"],
         template="""
@@ -186,28 +179,25 @@ def get_conversation_chain(vectorstore):
     )
     return conversation_chain
 
-# Handle user input (modified to store in session state like Code #1)
+# Handle user input
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state['past'].append(user_question)
     st.session_state['generated'].append(response['answer'])
     st.session_state['history'].append((user_question, response['answer']))
 
-# Main function (modified to use Code #1's UI structure)
+# Main function
 def main():
     load_dotenv()
 
-    # Check for OpenAI API key
     if os.getenv("OPENAI_API_KEY") is None or os.getenv("OPENAI_API_KEY") == "":
         st.error("OPENAI_API_KEY is not set")
         return
 
-    # Check for required dependencies
     if not check_dependency("streamlit_chat"):
         st.error("Missing required dependency 'streamlit_chat'. Please install it using 'pip install streamlit_chat'.")
         return
 
-    # Center the title and subtitle using custom CSS
     st.markdown(
         """
         <div style='text-align: center;'>
@@ -218,10 +208,8 @@ def main():
         unsafe_allow_html=True
     )
 
-    # Apply CSS for input and button styling
     st.markdown(css, unsafe_allow_html=True)
 
-    # Initialize session state for chat history
     if 'history' not in st.session_state:
         st.session_state['history'] = []
     if 'generated' not in st.session_state:
@@ -231,25 +219,22 @@ def main():
     if 'conversation' not in st.session_state:
         st.session_state.conversation = None
 
-    # File uploader in sidebar
+    # Sidebar
     pdf_docs = st.sidebar.file_uploader("Upload your PDFs", type="pdf", accept_multiple_files=True)
 
-    # Process button in sidebar
+    # Process button
     if pdf_docs and st.sidebar.button("Process"):
         with st.spinner("Processing..."):
-            # Get PDF text with OCR
+            
             raw_texts = get_pdf_text(pdf_docs)
             
-            # Get text chunks with metadata
             text_chunks = get_text_chunks(raw_texts)
             
-            # Create vector store
             vectorstore = get_vectorstore(text_chunks)
             
-            # Create conversation chain
             st.session_state.conversation = get_conversation_chain(vectorstore)
 
-    # Containers for chat history and user input
+    # Containers for chat history 
     response_container = st.container()
     container = st.container()
 
@@ -265,7 +250,7 @@ def main():
                 with st.spinner("Processing..."):
                     handle_userinput(user_input)
 
-    # Display chat history
+    # Chat history
     if st.session_state['generated']:
         with response_container:
             for i in range(len(st.session_state['generated'])):
