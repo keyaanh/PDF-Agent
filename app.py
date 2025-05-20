@@ -201,7 +201,7 @@ def main():
     st.markdown(
         """
         <div style='text-align: center;'>
-            <h1>Chat with Messy PDFs 📚</h1>
+            <h1>Chat with PDFs 📚</h1>
             <h3 style='color: white;'>Ask questions about your PDF documents</h3>
         </div>
         """,
