@@ -18,8 +18,7 @@ The PDF Agent leverages **LangChain**, **Tesseract OCR**, and a **vector store (
 
 Here’s what the app looks like in action:
 
-![PDF Agent Screenshot](images/Screenshot 2025-05-19 at 1.13.51 PM.png)
-
+![PDF Agent Screenshot](images/screenshot.png)
 
 ---
 
