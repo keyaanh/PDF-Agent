@@ -26,7 +26,6 @@ Here’s what the app looks like in action:
 
 - **OCR Support**: Uses `pytesseract` to extract text from low-quality scans.
 - **Text Cleaning**: Automatically fixes common OCR errors (e.g., "PROOUCTS" → "PRODUCTS").
-- **Structured Data Extraction**: Uses regex to pull delivery ticket numbers, item names, and more.
 - **Conversational Retrieval**: Lets users ask natural questions using LangChain’s `ConversationalRetrievalChain`.
 - **Streamlit UI**: Clean interface for uploading PDFs and asking questions.
 
